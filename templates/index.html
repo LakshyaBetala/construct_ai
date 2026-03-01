@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConstructAI — Adaptive Construction Digital Twin</title>
+    <meta name="description" content="AI-powered construction optimization platform using digital twin simulation">
+
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#e3f2fd', 100: '#bbdefb', 200: '#90caf9', 300: '#64b5f6', 400: '#42a5f5', 500: '#2196f3', 600: '#1e88e5', 700: '#1565c0', 800: '#0d47a1', 900: '#0a1929', 950: '#060f1a' },
+                        surface: { DEFAULT: '#0b1219', light: '#121e2b', mid: '#182638', border: '#1a3050', glow: '#1e3a5f' },
+                        accent: { cyan: '#4fc3f7', green: '#00e676', red: '#ff5252', orange: '#ffab40', purple: '#b388ff' },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    },
+                },
+            },
+        }
+    </script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="bg-surface text-gray-300 font-sans overflow-hidden h-screen">
+
+    <!-- ═══════════ AI PROCESSING OVERLAY ═══════════ -->
+    <div id="aiOverlay" class="ai-overlay hidden">
+        <div class="ai-overlay-content">
+            <div class="ai-brain-container">
+                <div class="ai-brain-ring ring-1"></div>
+                <div class="ai-brain-ring ring-2"></div>
+                <div class="ai-brain-ring ring-3"></div>
+                <div class="ai-brain-core">AI</div>
+            </div>
+            <h2 class="text-xl font-bold text-white mt-6 tracking-wide" id="overlayTitle">Processing</h2>
+            <p class="text-sm text-accent-cyan font-mono mt-2" id="overlayMessage">Initializing engine...</p>
+            <div class="ai-progress-bar mt-5">
+                <div class="ai-progress-fill" id="overlayProgress"></div>
+            </div>
+            <p class="text-[11px] text-gray-500 mt-3 font-mono" id="overlayScenarios"></p>
+        </div>
+    </div>
+
+    <!-- ═══════════ HEADER BAR ═══════════ -->
+    <header class="header-bar">
+        <div class="flex items-center gap-3">
+            <div class="logo-mark">C</div>
+            <div>
+                <h1 class="text-base font-extrabold text-white tracking-tight leading-none">Construct<span
+                        class="text-accent-cyan">AI</span></h1>
+                <p class="text-[9px] text-gray-500 uppercase tracking-[0.2em] leading-none mt-0.5">Adaptive Digital Twin
+                    Platform</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-5">
+            <!-- Twin Status -->
+            <div class="header-chip" id="statusChip">
+                <div class="status-pulse" id="statusPulse"></div>
+                <span class="text-[10px] font-bold uppercase tracking-wider" id="statusLabel">IDLE</span>
+            </div>
+            <!-- AI Confidence -->
+            <div class="header-chip">
+                <svg class="w-3.5 h-3.5 text-accent-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                    </path>
+                </svg>
+                <span class="text-[10px] text-gray-500 uppercase tracking-wider">Confidence</span>
+                <span class="text-xs font-bold text-accent-cyan font-mono" id="headerConfidence">—</span>
+            </div>
+            <!-- Clock -->
+            <div class="text-[10px] text-gray-600 font-mono hidden lg:block" id="headerClock"></div>
+        </div>
+    </header>
+
+    <!-- ═══════════ 3-ZONE LAYOUT ═══════════ -->
+    <div class="three-zone">
+
+        <!-- ══════ LEFT: Control Center ══════ -->
+        <aside class="zone-left custom-scroll" id="controlPanel">
+
+            <!-- Project Config -->
+            <div class="ctrl-section">
+                <div class="ctrl-section-header">
+                    <svg class="w-4 h-4 text-accent-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span>Project Configuration</span>
+                </div>
+                <div class="ctrl-field">
+                    <label class="ctrl-label">Project Scale</label>
+                    <select id="projectSize" class="ctrl-select">
+                        <option value="small">Small — Residential</option>
+                        <option value="medium" selected>Medium — Commercial</option>
+                        <option value="large">Large — Infrastructure</option>
+                    </select>
+                </div>
+                <div class="ctrl-field">
+                    <label class="ctrl-label">Workforce Size</label>
+                    <div class="flex items-center gap-2">
+                        <input type="range" id="workers" min="10" max="200" value="80" step="5"
+                            class="ctrl-slider flex-1">
+                        <span id="workersValue"
+                            class="text-xs font-mono font-bold text-accent-cyan w-8 text-right">80</span>
+                    </div>
+                    <div class="flex justify-between text-[9px] text-gray-600 mt-0.5 px-0.5">
+                        <span>10</span><span>200</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Environment Controls -->
+            <div class="ctrl-section">
+                <div class="ctrl-section-header">
+                    <svg class="w-4 h-4 text-accent-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                    </svg>
+                    <span>Environment Controls</span>
+                </div>
+                <div class="ctrl-field">
+                    <label class="ctrl-label">Weather Condition</label>
+                    <select id="weather" class="ctrl-select">
+                        <option value="sunny">☀️ Sunny — Optimal</option>
+                        <option value="humid">🌤️ Humid — Moderate</option>
+                        <option value="rainy">🌧️ Rainy — High Risk</option>
+                    </select>
+                </div>
+                <div class="ctrl-field">
+                    <label class="ctrl-label">Material Availability</label>
+                    <select id="material" class="ctrl-select">
+                        <option value="high">High — Full Supply</option>
+                        <option value="medium" selected>Medium — Standard</option>
+                        <option value="low">Low — Constrained</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="ctrl-section">
+                <div class="ctrl-section-header">
+                    <svg class="w-4 h-4 text-accent-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Simulation Actions</span>
+                </div>
+                <button id="btnSimulate" class="ctrl-btn ctrl-btn-primary">
+                    <span class="ctrl-btn-icon">▶</span>
+                    <span class="ctrl-btn-text">Initialize Digital Twin</span>
+                    <span class="ctrl-btn-loader hidden"></span>
+                </button>
+                <button id="btnDisrupt" class="ctrl-btn ctrl-btn-danger" disabled>
+                    <span class="ctrl-btn-icon">⚡</span>
+                    <span class="ctrl-btn-text">Inject Site Event</span>
+                    <span class="ctrl-btn-loader hidden"></span>
+                </button>
+                <button id="btnOptimize" class="ctrl-btn ctrl-btn-success" disabled>
+                    <span class="ctrl-btn-icon">🧠</span>
+                    <span class="ctrl-btn-text">Run Adaptive Optimization</span>
+                    <span class="ctrl-btn-loader hidden"></span>
+                </button>
+            </div>
+
+            <!-- Twin State -->
+            <div class="ctrl-section" id="twinStateSection" style="display:none">
+                <div class="ctrl-section-header">
+                    <svg class="w-4 h-4 text-accent-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span>Twin State</span>
+                </div>
+                <div id="twinStateInfo" class="text-[11px] text-gray-500 font-mono space-y-1"></div>
+            </div>
+
+            <div class="mt-auto pt-4 text-center">
+                <p class="text-[9px] text-gray-700 font-mono">ConstructAI Engine v3.1</p>
+            </div>
+        </aside>
+
+        <!-- ══════ CENTER: Digital Twin View ══════ -->
+        <main class="zone-center custom-scroll" id="twinView">
+
+            <!-- Welcome / Idle State -->
+            <div id="idleState" class="idle-state">
+                <div class="idle-icon">
+                    <svg class="w-12 h-12 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-300 mt-4">Digital Twin Ready</h2>
+                <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto">Configure project parameters and initialize the
+                    digital twin to begin adaptive construction simulation.</p>
+            </div>
+
+            <!-- Active Status Banner -->
+            <div id="activeBanner" class="active-banner hidden">
+                <div class="heartbeat-dot"></div>
+                <span class="text-[11px] font-bold uppercase tracking-[0.15em]" id="bannerLabel">Digital Twin
+                    Active</span>
+                <div class="banner-metrics">
+                    <div class="banner-metric">
+                        <span class="banner-metric-label">Risk</span>
+                        <span class="banner-metric-value" id="bannerRisk">—</span>
+                    </div>
+                    <div class="banner-metric">
+                        <span class="banner-metric-label">Efficiency</span>
+                        <span class="banner-metric-value" id="bannerEfficiency">—</span>
+                    </div>
+                    <div class="banner-metric">
+                        <span class="banner-metric-label">AI Conf.</span>
+                        <span class="banner-metric-value" id="bannerConfidence">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Metrics Row -->
+            <div id="metricsRow" class="metrics-row hidden">
+                <div class="metric-card mc-cyan" id="metricDuration">
+                    <div class="metric-icon">⏱</div>
+                    <div class="metric-body">
+                        <span class="metric-label">Avg Duration</span>
+                        <span class="metric-value" data-target="0">—</span>
+                        <span class="metric-unit">days</span>
+                    </div>
+                </div>
+                <div class="metric-card mc-orange" id="metricCost">
+                    <div class="metric-icon">💰</div>
+                    <div class="metric-body">
+                        <span class="metric-label">Avg Cost</span>
+                        <span class="metric-value" data-target="0">—</span>
+                        <span class="metric-unit">USD</span>
+                    </div>
+                </div>
+                <div class="metric-card mc-red" id="metricRisk">
+                    <div class="metric-icon">🛡</div>
+                    <div class="metric-body">
+                        <span class="metric-label">Avg Risk</span>
+                        <span class="metric-value" data-target="0">—</span>
+                        <span class="metric-unit">/ 100</span>
+                    </div>
+                </div>
+                <div class="metric-card mc-green" id="metricScenarios">
+                    <div class="metric-icon">🔬</div>
+                    <div class="metric-body">
+                        <span class="metric-label">Sim Depth</span>
+                        <span class="metric-value" data-target="0">—</span>
+                        <span class="metric-unit">scenarios</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plan Cards -->
+            <div id="planSection" class="hidden">
+                <div class="section-label">Execution Plans</div>
+                <div class="plan-grid" id="planCards"></div>
+            </div>
+
+            <!-- Charts -->
+            <div id="chartSection" class="hidden">
+                <div class="chart-row">
+                    <div class="chart-card">
+                        <div class="chart-title">Duration Analysis</div>
+                        <canvas id="durationChart" height="180"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">Cost Analysis</div>
+                        <canvas id="costChart" height="180"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card mt-3">
+                    <div class="chart-title">Phase Timeline</div>
+                    <canvas id="timelineChart" height="130"></canvas>
+                </div>
+            </div>
+
+            <!-- Disruption Alert -->
+            <div id="disruptionAlert" class="hidden">
+                <div class="disruption-card">
+                    <div class="disruption-header">
+                        <span class="disruption-icon" id="disruptIcon"></span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="disruption-name" id="disruptName"></span>
+                                <span class="disruption-sev" id="disruptSev"></span>
+                            </div>
+                            <p class="disruption-desc" id="disruptDesc"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimization Result -->
+            <div id="optimizationSection" class="hidden">
+                <!-- AI Recalibration Banner -->
+                <div class="ai-recalibration-banner">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">🧠</span>
+                        <span class="text-sm font-bold text-white">AI has recalibrated execution strategy</span>
+                    </div>
+                    <p class="text-xs text-blue-200/70 mt-1">Digital twin simulation complete. Adaptive recovery plan
+                        deployed.</p>
+                </div>
+
+                <!-- Improvement Cards -->
+                <div class="section-label mt-4">Optimization Gains</div>
+                <div class="improvement-row" id="improvementCards"></div>
+
+                <!-- Before vs After -->
+                <div class="section-label mt-4">Before vs After</div>
+                <div class="compare-grid">
+                    <div class="compare-card compare-before" id="beforeCard"></div>
+                    <div class="compare-card compare-after" id="afterCard"></div>
+                </div>
+
+                <!-- Comparison Chart -->
+                <div class="chart-card mt-3">
+                    <div class="chart-title">Original vs AI-Optimized</div>
+                    <canvas id="comparisonChart" height="180"></canvas>
+                </div>
+
+                <!-- AI Decision Report -->
+                <details class="decision-report mt-3" id="decisionReport">
+                    <summary class="decision-report-summary">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm">🧠</span>
+                            <span class="text-xs font-bold text-gray-300 uppercase tracking-wider">AI Decision
+                                Report</span>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-500 detail-chevron" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </summary>
+                    <div class="decision-report-body" id="decisionReportBody"></div>
+                </details>
+            </div>
+        </main>
+
+        <!-- ══════ RIGHT: AI Intelligence Feed ══════ -->
+        <aside class="zone-right" id="aiFeedPanel">
+            <div class="feed-header">
+                <div class="flex items-center gap-2">
+                    <div class="feed-pulse"></div>
+                    <span class="text-[10px] font-bold uppercase tracking-[0.15em] text-accent-cyan">AI Intelligence
+                        Feed</span>
+                </div>
+                <button class="text-[9px] text-gray-600 hover:text-gray-400 transition-colors"
+                    id="btnClearFeed">Clear</button>
+            </div>
+            <div class="feed-scroll custom-scroll" id="feedScroll">
+                <div id="feedList" class="feed-list">
+                    <div class="feed-item feed-system">
+                        <div class="feed-dot dot-blue"></div>
+                        <div>
+                            <div class="feed-time">System</div>
+                            <div class="feed-msg">ConstructAI engine initialized. Awaiting project configuration.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- App JS -->
+    <script src="/static/app.js"></script>
+</body>
+
+</html>
